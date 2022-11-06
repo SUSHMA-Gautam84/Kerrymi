@@ -1,0 +1,166 @@
+
+
+/*  Getting_BPM_to_Monitor prints the BPM to the Serial Monitor, using the least lines of code and PulseSensor Library.
+ *  Tutorial Webpage: https://pulsesensor.com/pages/getting-advanced
+ *
+--------Use This Sketch To------------------------------------------
+1) Displays user's live and changing BPM, Beats Per Minute, in Arduino's native Serial Monitor.
+2) Print: "♥  A HeartBeat Happened !" when a beat is detected, live.
+2) Learn about using a PulseSensor Library "Object".
+4) Blinks LED on PIN 13 with user's Heartbeat.
+--------------------------------------------------------------------*/
+
+#define USE_ARDUINO_INTERRUPTS true    // Set-up low-level interrupts for most acurate BPM math.
+#include <PulseSensorPlayground.h>     // Includes the PulseSensorPlayground Library.   
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+//  Variables
+const int PulseWire = A0;       // PulseSensor PURPLE WIRE connected to ANALOG PIN 0
+const int LED13 = 13;          // The on-board Arduino LED, close to PIN 13.
+int Threshold = 550;           // Determine which Signal to "count as a beat" and which to ignore.
+                               // Use the "Gettting Started Project" to fine-tune Threshold Value beyond default setting.
+                               // Otherwise leave the default "550" value. 
+int Signal;                // holds the incoming raw data. Signal value can range from 0-1024                              
+
+const int MaxBeats = 90;
+ bool low = false;
+
+//const int PulseSensorPurplePin = 5V; [WILL REMOVE IF THE CODE WORKS]
+
+static const int RXPin = 4, TXPin = 3;
+static const uint32_t GPSBaud = 9600;
+
+// The TinyGPS++ object
+TinyGPSPlus gps;
+
+// The serial connection to the GPS device
+SoftwareSerial ss(RXPin, TXPin);
+
+                              
+PulseSensorPlayground pulseSensor;  // Creates an instance of the PulseSensorPlayground object called "pulseSensor"
+
+
+void setup() {   
+
+  Serial.begin(9600);          // For Serial Monitor
+
+  ss.begin(GPSBaud);
+
+  // Configure the PulseSensor object, by assigning our variables to it. 
+  pulseSensor.analogInput(PulseWire);   
+  pulseSensor.blinkOnPulse(LED13);       //auto-magically blink Arduino's LED with heartbeat.
+  pulseSensor.setThreshold(Threshold);   
+
+  // Double-check the "pulseSensor" object was created and "began" seeing a signal. 
+   if (pulseSensor.begin()) {
+    Serial.println("We created a pulseSensor Object !");  //This prints one time at Arduino power-up,  or on Arduino reset.  
+  }
+}
+
+void loop() {
+  int myBPM = pulseSensor.getBeatsPerMinute();      // Calculates BPM
+
+  if (pulseSensor.sawStartOfBeat()) {               // Constantly test to see if a beat happened
+    Serial.println("♥  A HeartBeat Happened ! "); // If true, print a message
+    Serial.print("BPM: ");
+    Serial.println(myBPM);                        // Print the BPM value
+    }
+  Serial.println(myBPM); 
+  if(myBPM>90){
+    for(int i = 0; i<5; i++){
+      myBPM = pulseSensor.getBeatsPerMinute();
+      if(i==4){
+        Serial.println("boom");
+        low = true;
+//        while (ss.available() > 0){
+//    gps.encode(ss.read());
+//    if (gps.location.isUpdated()){
+//      Serial.print("Latitude= "); 
+//      Serial.print(gps.location.lat(), 6);
+//      Serial.print(" Longitude= "); 
+//      Serial.println(gps.location.lng(), 6);
+//    }
+//  }
+      }
+      Serial.println("danger");
+      delay(5000);
+      if(myBPM<MaxBeats){
+        Serial.println("situation-> normal");
+        
+        break;
+       }
+       else{
+        continue;
+       }
+    }
+    
+   }
+   if(low){
+    delay(1000);
+   }
+
+  delay(10);
+}
+
+//void loop() {
+//
+// int myBPM = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor object that returns BPM as an "int".
+//                                               // "myBPM" hold this BPM value now. 
+//
+////for live and changing BPM
+//
+//if (pulseSensor.sawStartOfBeat()) {            // Constantly test to see if "a beat happened". 
+// Serial.println("♥  A HeartBeat Happened ! "); // If test is "true", print a message "a heartbeat happened".
+//
+// //for Alzeihmers' Patients
+//if(myBPM > MaxBeats){
+//  for(int i; i<5; i++){
+//    if(myBPM > MaxBeats){
+//      Serial.println("ALERT: Heartbeats High!!");  
+//      Serial.println("BPM: in if");                        // Print phrase "BPM: " 
+//      Serial.println(myBPM);                        // Print the value inside of myBPM.
+//      
+//      //CALL THE GPS FUNCTION HERE.
+//      // This sketch displays information every time a new sentence is correctly encoded.
+////  while (ss.available() > 0){
+////    gps.encode(ss.read());
+////    if (gps.location.isUpdated()){
+////      Serial.print("Latitude= "); 
+////      Serial.print(gps.location.lat(), 6);
+////      Serial.print(" Longitude= "); 
+////      Serial.println(gps.location.lng(), 6);
+////    }
+////  }
+////      break;
+//    }
+//    else{
+//      break;
+//    }
+//  }
+//}else{
+// Serial.println("BPM: ");                        // Print phrase "BPM: " 
+// Serial.println(myBPM);                        // Print the value inside of myBPM. 
+//}
+//}
+//
+////for plotting
+//
+//Signal = analogRead(PulseWire);  // Read the PulseSensor's value.
+//                                              // Assign this value to the "Signal" variable.
+//
+//   Serial.println(Signal);                    // Send the Signal value to Serial Plotter.
+//
+//
+//   if(Signal > Threshold){                          // If the signal is above "550", then "turn-on" Arduino's on-Board LED.
+//     digitalWrite(LED13,HIGH);
+//   } else {
+//     digitalWrite(LED13,LOW);                //  Else, the sigal must be below "550", so "turn-off" this LED.
+//   }
+//
+//
+//  delay(20);                    // considered best practice in a simple sketch.
+//
+//}
+
+  
